@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Learning Capsule</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #F5F8FF;
+      color: #012060;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+    h1 {
+      color: #FD3131;
+    }
+    .controls {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    button, input[type="number"] {
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 1rem;
+    }
+    .capsule {
+      width: 100px;
+      height: 300px;
+      background-color: #01206033;
+      border: 2px solid #012060;
+      border-radius: 50px;
+      overflow: hidden;
+      position: relative;
+      margin-top: 30px;
+    }
+    .fill {
+      background-color: #FD3131;
+      position: absolute;
+      bottom: 0;
+      width: 100%;
+      height: 0%;
+      transition: height 0.5s ease-in-out;
+    }
+    .stage-box {
+      margin-top: 30px;
+      max-width: 400px;
+      text-align: center;
+    }
+    .xp-display {
+      margin-top: 20px;
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: #FD3131;
+    }
+    .timer-display {
+      margin-top: 10px;
+      font-size: 1.2rem;
+      color: #FD3131;
+    }
+  </style>
+</head>
+<body>
+  <h1>Learning Capsule</h1>
+
+  <div class="controls">
+    <input type="number" id="timeInput" placeholder="Minutes" min="1" max="120" />
+    <button onclick="startCapsule()">Start Capsule</button>
+    <button onclick="resetCapsule()">Reset Capsule</button>
+  </div>
+
+  <div class="capsule">
+    <div class="fill" id="fill"></div>
+  </div>
+
+  <div class="stage-box">
+    <p id="stageText">Please start a capsule.</p>
+    <button id="nextStageBtn" style="display:none" onclick="nextStage()">Next Step</button>
+  </div>
+
+  <div class="xp-display" id="xpDisplay">XP: 0</div>
+  <div class="timer-display" id="timerDisplay">Time Left: 0:00</div>
+
+  <script>
+    const stages = [
+      'Read a short summary.',
+      'Write a 1-sentence reflection.',
+      'Note down 1 idea.',
+      'Take a deep breath.',
+      'Rate your clarity (1-5).',
+      'Read a full article.',
+      'Answer a critical question.',
+      'Summarize in 3 sentences.',
+      'Connect to personal experience.',
+      'Evaluate your understanding.',
+      'Study a full research piece.',
+      'Write a paragraph reflection.',
+      'Formulate 1 original idea.',
+      'Apply theory to real life.',
+      'Write a conclusion.'
+    ];
+
+    let currentStage = 0;
+    let totalXP = 0;
+    let capsuleTimer;
+    let timeLeft;
+
+    function startCapsule() {
+      const minutes = parseInt(document.getElementById('timeInput').value);
+
+      if (!minutes || minutes < 1) {
+        alert("Set a valid time in minutes.");
+        return;
+      }
+
+      currentStage = 0;
+      totalXP = 0; // Reset XP when starting a new capsule
+      timeLeft = minutes * 60; // Convert minutes to seconds
+      updateXP();
+      updateStage();
+      updateFill();
+      updateTimerDisplay();
+
+      document.getElementById('nextStageBtn').style.display = 'inline-block';
+      startTimer();
+    }
+
+    function resetCapsule() {
+      clearInterval(capsuleTimer);
+      currentStage = 0;
+      totalXP = 0;
+      timeLeft = 0;
+      document.getElementById('stageText').textContent = "Please start a capsule.";
+      document.getElementById('nextStageBtn').style.display = 'none';
+      updateFill();
+      updateXP();
+      updateTimerDisplay();
+    }
+
+    function updateStage() {
+      if (currentStage < stages.length) {
+        document.getElementById('stageText').textContent = stages[currentStage];
+      } else {
+        document.getElementById('stageText').textContent = "Capsule Complete!";
+        document.getElementById('nextStageBtn').style.display = 'none';
+        totalXP += 10; // XP reward for each stage
+        updateXP();
+      }
+    }
+
+    function nextStage() {
+      if (currentStage < stages.length) {
+        totalXP += 10; // XP reward for each stage
+        currentStage++;
+        updateFill();
+        updateStage();
+      }
+    }
+
+    function updateFill() {
+      const percent = (currentStage / stages.length) * 100;
+      document.getElementById('fill').style.height = percent + '%';
+    }
+
+    function updateXP() {
+      document.getElementById('xpDisplay').textContent = 'XP: ' + totalXP;
+    }
+
+    function startTimer() {
+      clearInterval(capsuleTimer);
+      capsuleTimer = setInterval(() => {
+        timeLeft--;
+        updateTimerDisplay();
+        if (timeLeft <= 0) {
+          clearInterval(capsuleTimer);
+          alert("Time's up! Capsule locked.");
+          document.getElementById('nextStageBtn').disabled = true;
+        }
+      }, 1000);
+    }
+
+    function updateTimerDisplay() {
+      const minutes = Math.floor(timeLeft / 60);
+      const seconds = timeLeft % 60;
+      document.getElementById('timerDisplay').textContent = `Time Left: ${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+    }
+  </script>
+</body>
+</html>
