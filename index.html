@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Learning Capsule</title>
   <style>
     body {
@@ -29,6 +29,23 @@
       border-radius: 8px;
       font-size: 1rem;
     }
+
+    /* بیضی افقی قرمز */
+    .oval {
+      width: 60px;
+      height: 28px;
+      background-color: #FD3131;
+      border-radius: 30px / 14px;
+      cursor: pointer;
+      margin-bottom: 10px;
+      box-shadow: 0 0 8px #FD3131aa;
+      transition: background-color 0.3s ease;
+    }
+    .oval:hover {
+      background-color: #e02424;
+      box-shadow: 0 0 14px #e02424cc;
+    }
+
     .capsule {
       width: 100px;
       height: 300px;
@@ -37,7 +54,10 @@
       border-radius: 50px;
       overflow: hidden;
       position: relative;
-      margin-top: 30px;
+      margin-top: 0; /* بیضی بالاست */
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
     }
     .fill {
       background-color: #FD3131;
@@ -46,6 +66,7 @@
       width: 100%;
       height: 0%;
       transition: height 0.5s ease-in-out;
+      border-radius: 0 0 50px 50px;
     }
     .stage-box {
       margin-top: 30px;
@@ -74,6 +95,9 @@
     <button onclick="resetCapsule()">Reset Capsule</button>
   </div>
 
+  <!-- بیضی افقی بالای کپسول -->
+  <div class="oval" title="Open capsule archive" onclick="openSpreadsheet()"></div>
+
   <div class="capsule">
     <div class="fill" id="fill"></div>
   </div>
@@ -86,23 +110,16 @@
   <div class="xp-display" id="xpDisplay">XP: 0</div>
   <div class="timer-display" id="timerDisplay">Time Left: 0:00</div>
 
+  <!-- صدای پایان -->
+  <audio id="endSound" src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg" preload="auto"></audio>
+
   <script>
     const stages = [
       'Read a short summary.',
       'Write a 1-sentence reflection.',
       'Note down 1 idea.',
       'Take a deep breath.',
-      'Rate your clarity (1-5).',
-      'Read a full article.',
-      'Answer a critical question.',
-      'Summarize in 3 sentences.',
-      'Connect to personal experience.',
-      'Evaluate your understanding.',
-      'Study a full research piece.',
-      'Write a paragraph reflection.',
-      'Formulate 1 original idea.',
-      'Apply theory to real life.',
-      'Write a conclusion.'
+      'Rate your clarity (1-5).'
     ];
 
     let currentStage = 0;
@@ -119,14 +136,16 @@
       }
 
       currentStage = 0;
-      totalXP = 0; // Reset XP when starting a new capsule
-      timeLeft = minutes * 60; // Convert minutes to seconds
+      totalXP = 0;
+      timeLeft = minutes * 60;
       updateXP();
       updateStage();
       updateFill();
       updateTimerDisplay();
 
       document.getElementById('nextStageBtn').style.display = 'inline-block';
+      document.getElementById('nextStageBtn').disabled = false;
+
       startTimer();
     }
 
@@ -148,17 +167,22 @@
       } else {
         document.getElementById('stageText').textContent = "Capsule Complete!";
         document.getElementById('nextStageBtn').style.display = 'none';
-        totalXP += 10; // XP reward for each stage
-        updateXP();
       }
     }
 
     function nextStage() {
       if (currentStage < stages.length) {
-        totalXP += 10; // XP reward for each stage
+        totalXP += 40; // هر مرحله 40 XP
         currentStage++;
         updateFill();
         updateStage();
+
+        if (currentStage >= stages.length) {
+          clearInterval(capsuleTimer);
+          alert("Capsule complete! Well done!");
+          document.getElementById('nextStageBtn').disabled = true;
+        }
+        updateXP();
       }
     }
 
@@ -178,6 +202,7 @@
         updateTimerDisplay();
         if (timeLeft <= 0) {
           clearInterval(capsuleTimer);
+          playEndSound();
           alert("Time's up! Capsule locked.");
           document.getElementById('nextStageBtn').disabled = true;
         }
@@ -188,6 +213,17 @@
       const minutes = Math.floor(timeLeft / 60);
       const seconds = timeLeft % 60;
       document.getElementById('timerDisplay').textContent = `Time Left: ${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+    }
+
+    function openSpreadsheet() {
+      window.open('https://docs.google.com/spreadsheets/d/1FffFfF9GrsJ7nnaPHr6-UDUZgTpbu2vLCbMv5LrMYdQ/edit?usp=sharing', '_blank');
+    }
+
+    function playEndSound() {
+      const sound = document.getElementById('endSound');
+      sound.play().catch(() => {
+        // اگر مرورگر اجازه نداد پخش کند (مثلا به دلیل خودکار نبودن)، مشکلی نیست
+      });
     }
   </script>
 </body>
