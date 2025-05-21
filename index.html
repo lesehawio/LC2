@@ -22,6 +22,8 @@
       display: flex;
       gap: 10px;
       margin-bottom: 20px;
+      flex-wrap: wrap;
+      justify-content: center;
     }
     button, input[type="number"] {
       padding: 8px;
@@ -29,8 +31,6 @@
       border-radius: 8px;
       font-size: 1rem;
     }
-
-    /* بیضی افقی قرمز */
     .oval {
       width: 60px;
       height: 28px;
@@ -45,7 +45,6 @@
       background-color: #e02424;
       box-shadow: 0 0 14px #e02424cc;
     }
-
     .capsule {
       width: 100px;
       height: 300px;
@@ -54,10 +53,11 @@
       border-radius: 50px;
       overflow: hidden;
       position: relative;
-      margin-top: 0; /* بیضی بالاست */
+      margin-top: 0;
       display: flex;
       justify-content: center;
       align-items: flex-end;
+      box-shadow: inset 0 0 20px #01206066;
     }
     .fill {
       background-color: #FD3131;
@@ -70,8 +70,16 @@
     }
     .stage-box {
       margin-top: 30px;
-      max-width: 400px;
+      max-width: 420px;
       text-align: center;
+      min-height: 100px;
+      padding: 10px 15px;
+      border: 2px solid #FD3131;
+      border-radius: 10px;
+      background-color: #ffe5e5;
+      color: #660000;
+      font-size: 1.1rem;
+      user-select: none;
     }
     .xp-display {
       margin-top: 20px;
@@ -83,6 +91,24 @@
       margin-top: 10px;
       font-size: 1.2rem;
       color: #FD3131;
+      font-weight: 600;
+    }
+    #nextStageBtn {
+      margin-top: 15px;
+      padding: 10px 20px;
+      background-color: #FD3131;
+      border: none;
+      color: white;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 1rem;
+      user-select: none;
+      transition: background-color 0.3s ease;
+    }
+    #nextStageBtn:disabled {
+      background-color: #f8bebe;
+      cursor: not-allowed;
     }
   </style>
 </head>
@@ -90,141 +116,129 @@
   <h1>Learning Capsule</h1>
 
   <div class="controls">
-    <input type="number" id="timeInput" placeholder="Minutes" min="1" max="120" />
+    <input type="number" id="timeInput" placeholder="Minutes (1-120)" min="1" max="120" />
     <button onclick="startCapsule()">Start Capsule</button>
     <button onclick="resetCapsule()">Reset Capsule</button>
   </div>
 
-  <!-- بیضی افقی بالای کپسول -->
   <div class="oval" title="Open capsule archive" onclick="openSpreadsheet()"></div>
 
   <div class="capsule">
     <div class="fill" id="fill"></div>
   </div>
 
-  <div class="stage-box">
-    <p id="stageText">Please start a capsule.</p>
+  <div class="stage-box" id="stageBox">
+    <p id="stageText">Please start the capsule.</p>
     <button id="nextStageBtn" style="display:none" onclick="nextStage()">Next Step</button>
   </div>
 
   <div class="xp-display" id="xpDisplay">XP: 0</div>
   <div class="timer-display" id="timerDisplay">Time Left: 0:00</div>
 
-  <!-- صدای پایان -->
   <audio id="endSound" src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg" preload="auto"></audio>
 
   <script>
-    const stages = [
-      'Read a short summary.',
-      'Write a 1-sentence reflection.',
-      'Note down 1 idea.',
-      'Take a deep breath.',
-      'Rate your clarity (1-5).'
-    ];
+    const capsule = {
+      capsuleName: "Capsule 1",
+      steps: [
+        { stage: "🧪 Preparation", description: "What's the goal of this session? Are tools and space ready?", mental: "Focus on the goal" },
+        { stage: "🧲 Injection", description: "What are you starting with? Inject an input (idea/question).", mental: "Starting a mental input" },
+        { stage: "🔥 Reaction", description: "Now execute! Read, write, design, explore.", mental: "Main learning activity" },
+        { stage: "☢️ Radiation", description: "What came out of the reaction? Idea? Confusion? Insight?", mental: "Mental output" },
+        { stage: "🔒 Cooling Down", description: "Note, wrap up, store safely.", mental: "Gently closing the capsule" },
+      ]
+    };
 
     let currentStage = 0;
     let totalXP = 0;
     let capsuleTimer;
-    let timeLeft;
+    let timeLeft = 0;
+
+    const stageText = document.getElementById('stageText');
+    const nextStageBtn = document.getElementById('nextStageBtn');
+    const fill = document.getElementById('fill');
+    const xpDisplay = document.getElementById('xpDisplay');
+    const timerDisplay = document.getElementById('timerDisplay');
+    const timeInput = document.getElementById('timeInput');
 
     function startCapsule() {
-      const minutes = parseInt(document.getElementById('timeInput').value);
-
-      if (!minutes || minutes < 1) {
-        alert("Set a valid time in minutes.");
+      const minutes = parseInt(timeInput.value);
+      if (!minutes || minutes < 1 || minutes > 120) {
+        alert("Please enter a valid time between 1 and 120 minutes.");
         return;
       }
+      if (capsuleTimer) clearInterval(capsuleTimer);
 
-      currentStage = 0;
-      totalXP = 0;
       timeLeft = minutes * 60;
-      updateXP();
-      updateStage();
-      updateFill();
       updateTimerDisplay();
 
-      document.getElementById('nextStageBtn').style.display = 'inline-block';
-      document.getElementById('nextStageBtn').disabled = false;
-
-      startTimer();
-    }
-
-    function resetCapsule() {
-      clearInterval(capsuleTimer);
-      currentStage = 0;
-      totalXP = 0;
-      timeLeft = 0;
-      document.getElementById('stageText').textContent = "Please start a capsule.";
-      document.getElementById('nextStageBtn').style.display = 'none';
-      updateFill();
-      updateXP();
-      updateTimerDisplay();
-    }
-
-    function updateStage() {
-      if (currentStage < stages.length) {
-        document.getElementById('stageText').textContent = stages[currentStage];
-      } else {
-        document.getElementById('stageText').textContent = "Capsule Complete!";
-        document.getElementById('nextStageBtn').style.display = 'none';
-      }
-    }
-
-    function nextStage() {
-      if (currentStage < stages.length) {
-        totalXP += 40; // هر مرحله 40 XP
-        currentStage++;
-        updateFill();
-        updateStage();
-
-        if (currentStage >= stages.length) {
-          clearInterval(capsuleTimer);
-          alert("Capsule complete! Well done!");
-          document.getElementById('nextStageBtn').disabled = true;
-        }
-        updateXP();
-      }
-    }
-
-    function updateFill() {
-      const percent = (currentStage / stages.length) * 100;
-      document.getElementById('fill').style.height = percent + '%';
-    }
-
-    function updateXP() {
-      document.getElementById('xpDisplay').textContent = 'XP: ' + totalXP;
-    }
-
-    function startTimer() {
-      clearInterval(capsuleTimer);
       capsuleTimer = setInterval(() => {
         timeLeft--;
         updateTimerDisplay();
         if (timeLeft <= 0) {
           clearInterval(capsuleTimer);
-          playEndSound();
-          alert("Time's up! Capsule locked.");
-          document.getElementById('nextStageBtn').disabled = true;
+          document.getElementById('endSound').play();
+          alert("Time is up for this capsule!");
+          nextStageBtn.disabled = false;
         }
       }, 1000);
+
+      nextStageBtn.disabled = true;
+      currentStage = 0;
+      updateStage();
+      nextStageBtn.style.display = "inline-block";
+    }
+
+    function nextStage() {
+      currentStage++;
+      if (currentStage >= capsule.steps.length) {
+        alert("You completed all stages of this capsule! +200 XP");
+        totalXP += 200;
+        updateXP();
+        resetCapsule();
+        return;
+      }
+      updateStage();
+    }
+
+    function updateStage() {
+      const step = capsule.steps[currentStage];
+      stageText.innerHTML = `
+        <strong>${step.stage}</strong><br/>
+        ${step.description}<br/>
+        <em>${step.mental}</em>
+      `;
+      const fillPercent = ((currentStage + 1) / capsule.steps.length) * 100;
+      fill.style.height = fillPercent + '%';
+      nextStageBtn.disabled = false;
+    }
+
+    function updateXP() {
+      xpDisplay.textContent = `XP: ${totalXP}`;
     }
 
     function updateTimerDisplay() {
       const minutes = Math.floor(timeLeft / 60);
       const seconds = timeLeft % 60;
-      document.getElementById('timerDisplay').textContent = `Time Left: ${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+      timerDisplay.textContent = `Time Left: ${minutes}:${seconds.toString().padStart(2, '0')}`;
+    }
+
+    function resetCapsule() {
+      if (capsuleTimer) clearInterval(capsuleTimer);
+      currentStage = 0;
+      fill.style.height = '0%';
+      stageText.textContent = "Please start the capsule.";
+      nextStageBtn.style.display = "none";
+      timerDisplay.textContent = "Time Left: 0:00";
+      timeInput.value = '';
+      nextStageBtn.disabled = true;
     }
 
     function openSpreadsheet() {
-      window.open('https://docs.google.com/spreadsheets/d/1FffFfF9GrsJ7nnaPHr6-UDUZgTpbu2vLCbMv5LrMYdQ/edit?usp=sharing', '_blank');
+      window.open('https://docs.google.com/spreadsheets/d/YOUR_SPREADSHEET_ID_HERE', '_blank');
     }
 
-    function playEndSound() {
-      const sound = document.getElementById('endSound');
-      sound.play().catch(() => {
-        // اگر مرورگر اجازه نداد پخش کند (مثلا به دلیل خودکار نبودن)، مشکلی نیست
-      });
-    }
+    resetCapsule();
   </script>
 </body>
 </html>
